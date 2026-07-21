@@ -22,6 +22,20 @@
     SS: "Special Session",
     KEY: "Key & Special"
   };
+  const TOPIC_DISPLAY_NAMES = {
+    "季風／ENSO／MJO／氣候變異": "季風與氣候",
+    "空品／氣膠／大氣化學": "空品與化學",
+    "氣象 AI／ML／再分析": "氣象 AI",
+    "海洋動力／環流／波浪／潮汐": "海洋動力",
+    "海洋環境／生地化學／生態": "海洋環境",
+    "海氣交互作用／海洋熱浪／海洋氣候": "海氣作用",
+    "雲／輻射／能量": "雲與輻射",
+    "傳統物理數值天氣預報／模式": "數值預報",
+    "極端天氣／降水／對流／颱風": "極端天氣",
+    "邊界層／陸氣交互作用／都市氣候": "陸氣與都市",
+    "觀測／遙測／資料方法": "觀測與資料",
+    Other: "其他"
+  };
   const BATCH_SIZE = 20;
 
   const $ = (selector) => document.querySelector(selector);
@@ -59,6 +73,9 @@
   let lastHelpFocus = null;
   let lastFilterFocus = null;
   let currentDetailGroup = null;
+  let currentDetailPresentations = [];
+  let selectedDetailScheduleKey = "";
+  let detailCandidateScheduleKeys = new Set();
   let toastTimer = null;
   const presentationPromises = new Map();
   const presentationsByCategory = new Map();
@@ -77,6 +94,7 @@
   const scheduleTypeOf = (row, category) =>
     category === "KEY" ? row.program_code || row.session_type : row.session_type || row.program_code;
   const categoryName = (category) => CATEGORY_NAMES[category] || category;
+  const topicDisplayName = (topic) => topic ? TOPIC_DISPLAY_NAMES[topic] || topic : "全部";
   const categoryClass = (category) => `category-${String(category || "").toLowerCase()}`;
   const venueGroup = (venue) => {
     const value = String(venue || "").trim().toUpperCase();
@@ -164,6 +182,9 @@
     $("#detail-content").innerHTML = "";
     $("#detail-back").classList.add("hidden");
     currentDetailGroup = null;
+    currentDetailPresentations = [];
+    selectedDetailScheduleKey = "";
+    detailCandidateScheduleKeys = new Set();
     updateBodyLock();
     lastDetailFocus?.focus();
   }
@@ -352,7 +373,9 @@
     const topics = allTopics();
     $("#topic-strip").innerHTML = ["", ...topics].map((topic) => {
       const active = state.topic === topic;
-      return `<button class="topic-chip${active ? " active" : ""}" type="button" data-topic="${esc(topic)}" aria-pressed="${active}">${esc(topic || "全部")}</button>`;
+      const fullLabel = topic || "顯示全部主題";
+      const accessibilityLabel = topic ? `主題：${topic}` : fullLabel;
+      return `<button class="topic-chip${active ? " active" : ""}" type="button" data-topic="${esc(topic)}" aria-pressed="${active}" aria-label="${esc(accessibilityLabel)}" title="${esc(fullLabel)}">${esc(topicDisplayName(topic))}</button>`;
     }).join("");
   }
 
@@ -377,7 +400,7 @@
       state.date && { key: "date", label: dayLabel(state.date) },
       state.time && { key: "time", label: formatTimeOption(state.time) },
       state.location && { key: "location", label: state.location },
-      state.topic && { key: "topic", label: state.topic }
+      state.topic && { key: "topic", label: topicDisplayName(state.topic) }
     ].filter(Boolean);
     const container = $("#active-filters");
     setHidden(container, !filters.length);
@@ -521,12 +544,14 @@
       group.counts.poster && `${group.counts.poster} Poster`,
       group.counts.other && `${group.counts.other} Key & Special`
     ].filter(Boolean);
+    const countText = `${countParts.join(" · ") || "尚無題目資料"}${extraSchedules ? ` · 另有 ${extraSchedules} 場` : ""}`;
     const scheduleHtml = schedule ? `
       <div class="schedule-summary">
         <strong>${esc(schedule.day || schedule.date)}</strong>
         <span>${esc(schedule.program_slot || schedule.time_range)}</span>
         <span class="room">${esc([schedule.venue, schedule.room].filter(Boolean).join(" · ") || "場地待確認")}</span>
-      </div>` : `<div class="schedule-summary"><span>時段資料待確認</span></div>`;
+        <span class="schedule-counts">${esc(countText)}</span>
+      </div>` : `<div class="schedule-summary schedule-summary-empty"><span>時段資料待確認</span><span class="schedule-counts">${esc(countText)}</span></div>`;
     return `
       <article class="result-card">
         <div class="card-top">
@@ -538,10 +563,6 @@
         </div>
         ${tags ? `<div class="card-tags">${tags}</div>` : ""}
         ${scheduleHtml}
-        <div class="card-foot">
-          <span>${esc(countParts.join(" · ") || "尚無題目資料")}${extraSchedules ? ` · 另有 ${extraSchedules} 場` : ""}</span>
-          <span class="card-open-hint">查看詳情 →</span>
-        </div>
       </article>`;
   }
 
@@ -555,10 +576,12 @@
       <article class="result-card presentation-card">
         <div class="card-top">
           <div class="card-identity">
-            <div class="card-code">${esc(type)} · ${esc(row.abstract_id || row.session_code)}</div>
+            <div class="presentation-eyebrow">
+              <div class="card-code">${esc(type)} · ${esc(row.abstract_id || row.session_code)}</div>
+              <div class="presentation-category">${esc(categoryName(categoryOf(row)))}</div>
+            </div>
             <button class="card-title-button" type="button" data-open-presentation="${esc(row.id)}" aria-label="查看 ${esc(row.abstract_id || "題目")} 詳情">${esc(row.presentation_title || "Untitled presentation")}</button>
           </div>
-          <div class="type-pills"><span class="type-pill ${typeClass(type)}">${esc(type)}</span></div>
         </div>
         <div class="presentation-meta"><span><strong>作者</strong> ${esc(author)}</span></div>
         <div class="presentation-meta">
@@ -566,7 +589,6 @@
           <span><strong>時間</strong> ${esc(schedule || "待確認")}</span>
           <span><strong>場地</strong> ${esc(room || "待確認")}</span>
         </div>
-        <div class="card-foot"><span>${esc(row.category)} · ${esc(categoryName(row.category))}</span><span class="card-open-hint">查看詳情 →</span></div>
       </article>`;
   }
 
@@ -629,44 +651,127 @@
     }
   }
 
+  function detailScheduleKey(schedule, group) {
+    return [
+      schedule.date,
+      scheduleTypeOf(schedule, group.category),
+      schedule.time_range || schedule.program_slot,
+      schedule.venue,
+      schedule.room
+    ].map((value) => String(value || "").trim()).join("::");
+  }
+
+  function detailScheduleSlotLabel(schedule) {
+    const match = String(schedule.program_slot || "").match(/^(AM1|AM2|PM1|PM2|Poster)\b/i);
+    return match ? match[1].toUpperCase().replace("POSTER", "Poster") : formatTimeRange(scheduleTimeKey(schedule));
+  }
+
+  function presentationMatchesDetailSchedule(row, schedule, group) {
+    const venueMatches = !row.venue || !schedule.venue || String(row.venue) === String(schedule.venue);
+    return row.date === schedule.date
+      && presentationTypeOf(row) === scheduleTypeOf(schedule, group.category)
+      && scheduleTimeKey(row) === scheduleTimeKey(schedule)
+      && venueMatches
+      && String(row.room || "") === String(schedule.room || "");
+  }
+
+  function prepareDetailScheduleState(group) {
+    selectedDetailScheduleKey = "";
+    detailCandidateScheduleKeys = new Set();
+    const hasScheduleFilter = Boolean(state.type || state.date || state.time || state.location);
+    if (!hasScheduleFilter) return;
+    const candidates = group.schedules.filter((schedule) => scheduleMatches(schedule, group));
+    detailCandidateScheduleKeys = new Set(candidates.map((schedule) => detailScheduleKey(schedule, group)));
+    if (candidates.length === 1) selectedDetailScheduleKey = detailScheduleKey(candidates[0], group);
+  }
+
   function detailScheduleHtml(schedule, group) {
+    const key = detailScheduleKey(schedule, group);
+    const selected = key === selectedDetailScheduleKey;
+    const candidate = detailCandidateScheduleKeys.has(key);
     return `
-      <div class="detail-schedule">
+      <button class="detail-schedule${selected ? " is-selected" : ""}${candidate && !selected ? " is-candidate" : ""}" type="button" data-detail-schedule="${esc(key)}" aria-pressed="${selected}">
+        <span class="detail-schedule-check" aria-hidden="true">✓</span>
         <strong>${esc(typeLabel(scheduleTypeOf(schedule, group.category)))} · ${esc(schedule.day || schedule.date)}</strong>
         <span>${esc(schedule.program_slot || schedule.time_range)} · ${esc([schedule.venue, schedule.room].filter(Boolean).join(" · ") || "場地待確認")}</span>
-      </div>`;
+      </button>`;
+  }
+
+  function detailPresentationRowsHtml(presentations) {
+    return presentations.map((row) => {
+      const type = presentationTypeOf(row) || "Presentation";
+      return `<button class="detail-presentation" type="button" data-open-presentation-detail="${esc(row.id)}"><span>${esc(type)} · ${esc(row.abstract_id || "")}</span><strong>${esc(row.presentation_title || "Untitled presentation")}</strong><small>${esc(row.presenting_author || "作者資料待確認")}</small></button>`;
+    }).join("");
+  }
+
+  function selectedDetailSchedule() {
+    return currentDetailGroup?.schedules.find((schedule) => detailScheduleKey(schedule, currentDetailGroup) === selectedDetailScheduleKey) || null;
+  }
+
+  function updateDetailScheduleSelection() {
+    $$Within($("#detail-content"), "[data-detail-schedule]").forEach((button) => {
+      const selected = button.dataset.detailSchedule === selectedDetailScheduleKey;
+      const candidate = detailCandidateScheduleKeys.has(button.dataset.detailSchedule);
+      button.classList.toggle("is-selected", selected);
+      button.classList.toggle("is-candidate", candidate && !selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    const allButton = $("#detail-show-all");
+    if (allButton) allButton.setAttribute("aria-pressed", String(!selectedDetailScheduleKey));
+    const note = $("#detail-candidate-note");
+    if (note) setHidden(note, Boolean(selectedDetailScheduleKey) || detailCandidateScheduleKeys.size <= 1);
+  }
+
+  function renderDetailPresentationList() {
+    const schedule = selectedDetailSchedule();
+    const visible = schedule
+      ? currentDetailPresentations.filter((row) => presentationMatchesDetailSchedule(row, schedule, currentDetailGroup))
+      : currentDetailPresentations;
+    const heading = $("#detail-presentations-heading");
+    const list = $("#detail-presentations-list");
+    if (!heading || !list) return;
+    heading.textContent = schedule
+      ? `題目清單 · ${schedule.day || schedule.date} · ${detailScheduleSlotLabel(schedule)} · ${visible.length.toLocaleString()} / ${currentDetailPresentations.length.toLocaleString()} 筆`
+      : `題目清單 · ${currentDetailPresentations.length.toLocaleString()} 筆`;
+    list.innerHTML = detailPresentationRowsHtml(visible)
+      || `<p class="detail-copy">${schedule ? "此場次沒有題目。" : "目前沒有題目資料。"}</p>`;
+    updateDetailScheduleSelection();
   }
 
   function renderSessionDetail(group, presentations) {
     currentDetailGroup = group;
+    currentDetailPresentations = presentations;
     $("#detail-back").classList.add("hidden");
     const source = group.schedules.find((schedule) => schedule.source_url)?.source_url;
     const peopleSource = group.schedules.find((schedule) => schedule.convener || schedule.session_chairs);
     const tags = group.topics.map((topic) => `<span class="theme-tag">${esc(topic)}</span>`).join("");
-    const presentationRows = presentations.map((row) => {
-      const type = presentationTypeOf(row) || "Presentation";
-      return `<button class="detail-presentation" type="button" data-open-presentation-detail="${esc(row.id)}"><span>${esc(type)} · ${esc(row.abstract_id || "")}</span><strong>${esc(row.presentation_title || "Untitled presentation")}</strong><small>${esc(row.presenting_author || "作者資料待確認")}</small></button>`;
-    }).join("");
     $("#detail-content").innerHTML = `
       <div class="detail-kicker">${esc(group.category)} · ${esc(categoryName(group.category))} · ${esc(group.code)}</div>
       <h2 id="detail-title">${esc(group.title || "Untitled session")}</h2>
       ${tags ? `<div class="detail-tags">${tags}</div>` : ""}
       <section class="detail-section">
-        <h3>所有時段與場地</h3>
+        <div class="detail-section-head">
+          <h3>所有時段與場地</h3>
+          <button class="detail-list-toggle" id="detail-show-all" type="button" aria-pressed="${!selectedDetailScheduleKey}">全部題目</button>
+        </div>
+        <p class="detail-filter-note${detailCandidateScheduleKeys.size > 1 && !selectedDetailScheduleKey ? "" : " hidden"}" id="detail-candidate-note">有多個場次符合目前條件，請選擇確切場次。</p>
         <div class="detail-schedules">${group.schedules.map((schedule) => detailScheduleHtml(schedule, group)).join("") || "<p>時段資料待確認。</p>"}</div>
       </section>
       ${peopleSource ? `<section class="detail-section"><h3>Session 人員</h3><div class="detail-people">${peopleSource.convener ? `<div><b>Convener</b>${esc(peopleSource.convener)}</div>` : ""}${peopleSource.session_chairs ? `<div><b>Session chairs</b>${esc(peopleSource.session_chairs)}</div>` : ""}</div></section>` : ""}
       <section class="detail-section">
-        <h3>題目清單 · ${presentations.length.toLocaleString()} 筆</h3>
-        <div class="detail-presentations">${presentationRows || "<p class='detail-copy'>目前沒有題目資料。</p>"}</div>
+        <h3 id="detail-presentations-heading">題目清單</h3>
+        <div class="detail-presentations" id="detail-presentations-list"></div>
       </section>
       ${source ? `<a class="official-link" href="${esc(source)}" target="_blank" rel="noreferrer">開啟官方議程 ↗</a>` : ""}`;
+    renderDetailPresentationList();
     $("#detail-content").scrollTop = 0;
   }
 
   async function openSession(group) {
     openDetailShell();
     currentDetailGroup = group;
+    currentDetailPresentations = [];
+    prepareDetailScheduleState(group);
     $("#detail-content").innerHTML = `<div class="status-panel">正在載入 ${esc(group.code)} 題目資料…</div>`;
     try {
       const rows = await loadPresentationCategory(group.category);
@@ -705,6 +810,9 @@
 
   function openPresentation(row) {
     openDetailShell();
+    currentDetailPresentations = [];
+    selectedDetailScheduleKey = "";
+    detailCandidateScheduleKeys = new Set();
     renderPresentationDetail(row, groupByKey.get(groupKeyOf(row)));
   }
 
@@ -965,6 +1073,18 @@
     });
 
     $("#detail-content").addEventListener("click", (event) => {
+      const scheduleButton = event.target.closest("[data-detail-schedule]");
+      if (scheduleButton) {
+        selectedDetailScheduleKey = scheduleButton.dataset.detailSchedule;
+        renderDetailPresentationList();
+        return;
+      }
+      const showAllButton = event.target.closest("#detail-show-all");
+      if (showAllButton) {
+        selectedDetailScheduleKey = "";
+        renderDetailPresentationList();
+        return;
+      }
       const presentationButton = event.target.closest("[data-open-presentation-detail]");
       if (presentationButton) {
         const row = presentationsById.get(presentationButton.dataset.openPresentationDetail);

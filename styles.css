@@ -159,7 +159,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .topic-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; min-width: 0; }
 .topic-label { flex: 0 0 auto; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .04em; }
-.topic-strip { display: flex; min-width: 0; align-items: center; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: thin; }
+.topic-strip { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 2px 4px; }
 .topic-chip, .filter-chip {
   min-height: 34px;
   padding: 6px 9px;
@@ -199,6 +199,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .card-identity { min-width: 0; }
 .card-code { color: var(--orange); font-size: 11px; font-weight: 900; letter-spacing: .06em; }
 .presentation-card .card-code { color: var(--teal); }
+.presentation-card .card-identity { width: 100%; }
+.presentation-eyebrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.presentation-category { flex: 0 0 auto; color: var(--muted); font-size: 11px; font-weight: 750; text-align: right; }
 .card-title-button {
   display: block;
   max-width: 100%;
@@ -220,12 +223,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .type-pill.special { background: var(--teal-soft); color: #1d625e; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .theme-tag { padding: 4px 7px; border-radius: 6px; background: #f0ece4; color: #665f53; font-size: 10px; }
-.schedule-summary { display: grid; grid-template-columns: minmax(94px, auto) minmax(150px, 1fr) auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 9px; background: var(--surface-2); font-size: 12px; }
+.schedule-summary { display: grid; grid-template-columns: minmax(94px, auto) minmax(140px, 1fr) minmax(115px, auto) auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 9px; background: var(--surface-2); font-size: 12px; }
+.schedule-summary-empty { grid-template-columns: minmax(150px, 1fr) auto; }
 .schedule-summary strong { font-size: 12px; }
 .schedule-summary span { color: var(--muted); }
 .schedule-summary .room { color: var(--teal); font-weight: 750; text-align: right; }
-.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
-.card-open-hint { color: var(--teal); font-weight: 800; }
+.schedule-summary .schedule-counts { padding-left: 10px; border-left: 1px solid var(--line); color: var(--ink); font-weight: 750; text-align: right; white-space: nowrap; }
 .presentation-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 11px; }
 .presentation-meta strong { color: var(--ink); }
 
@@ -296,8 +299,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .detail-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
 .detail-section { margin-top: 22px; padding-top: 19px; border-top: 1px solid var(--line); }
 .detail-section h3 { margin-bottom: 11px; font-size: 17px; }
+.detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+.detail-section-head h3 { margin-bottom: 0; }
+.detail-list-toggle { min-height: 38px; padding: 7px 11px; border: 1px solid var(--teal); border-radius: 999px; background: #fff; color: var(--teal); font-size: 12px; font-weight: 850; }
+.detail-list-toggle[aria-pressed="true"] { background: var(--teal-soft); }
+.detail-filter-note { margin: -2px 0 10px; color: var(--teal); font-size: 12px; }
 .detail-schedules, .detail-presentations { display: grid; gap: 9px; }
-.detail-schedule { padding: 12px 14px; border-radius: 9px; background: var(--surface-2); font-size: 14px; line-height: 1.55; }
+.detail-schedule { position: relative; width: 100%; min-height: 54px; padding: 12px 44px 12px 14px; border: 1px solid transparent; border-radius: 9px; background: var(--surface-2); color: var(--ink); font-size: 14px; line-height: 1.55; text-align: left; }
+.detail-schedule:hover { border-color: #9ac9c5; background: #eef8f7; }
+.detail-schedule.is-candidate { border-color: #9ac9c5; border-style: dashed; }
+.detail-schedule.is-selected { border-color: var(--teal); background: var(--teal-soft); box-shadow: 0 0 0 2px rgba(39, 126, 119, .12); }
+.detail-schedule-check { position: absolute; top: 50%; right: 14px; display: grid; width: 24px; height: 24px; translate: 0 -50%; place-items: center; border-radius: 50%; background: var(--teal); color: #fff; font-size: 14px; font-weight: 900; opacity: 0; }
+.detail-schedule.is-selected .detail-schedule-check { opacity: 1; }
 .detail-schedule strong { display: block; margin-bottom: 3px; }
 .detail-people { display: grid; gap: 12px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .detail-people b { display: block; margin-bottom: 3px; color: var(--ink); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
@@ -363,19 +376,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .more-filter-button { display: block; }
   .topic-row { align-items: start; }
   .topic-label { padding-top: 9px; }
-  .topic-strip { margin-right: -13px; padding-right: 13px; }
   .results-section { margin-top: 16px; }
   .results-head h2 { font-size: 22px; }
   .result-card { padding: 13px; }
   .card-top { display: block; }
+  .presentation-eyebrow { align-items: start; flex-wrap: wrap; gap: 3px 10px; }
+  .presentation-category { text-align: left; }
   .type-pills { justify-content: start; margin-top: 8px; }
   .schedule-summary { grid-template-columns: 1fr; gap: 2px; }
   .schedule-summary .room { text-align: left; }
-  .card-foot { align-items: end; }
+  .schedule-summary .schedule-counts { margin-top: 5px; padding: 6px 0 0; border-top: 1px solid var(--line); border-left: 0; text-align: left; white-space: normal; }
   .matrix-wrap { display: none; }
   .mobile-agenda { display: grid; }
   .detail-drawer { top: 6vh; width: 100%; border: 0; border-radius: 20px 20px 0 0; }
   .drawer-body { padding-inline: 16px; }
+  .detail-section-head { align-items: start; flex-wrap: wrap; }
   .filter-sheet {
     left: 0;
     right: 0;
