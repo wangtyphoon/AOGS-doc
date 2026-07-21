@@ -3,4 +3,7 @@
 !.gitignore
 !.nojekyll
 !index.html
-!aogs-extra-data.js
+!app.js
+!styles.css
+!data/
+!data/**
