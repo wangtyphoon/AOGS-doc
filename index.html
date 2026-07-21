@@ -40,6 +40,8 @@
     .view-tabs { display: flex; gap: 8px; margin-bottom: 22px; }
     .view-tab { padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-2); color: var(--muted); font-size: 13px; font-weight: 800; }
     .view-tab:hover, .view-tab.active { border-color: var(--teal); background: var(--teal-soft); color: #1f6762; }
+    .guide-mode-switch { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+    .guide-mode-switch .mode-chip { font-size: 12px; font-weight: 800; }
     .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
     .stat { min-height: 108px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper-2); box-shadow: 0 7px 20px rgba(21,32,43,.035); }
     .stat-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -176,6 +178,11 @@
       <div class="stat"><div class="stat-label">Conference days</div><div class="stat-value" id="stat-days">—</div><div class="stat-note">有 AS / OS 活動的日期</div></div>
     </section>
 
+    <div class="guide-mode-switch" role="tablist" aria-label="Session guide mode">
+      <button class="mode-chip active" type="button" role="tab" data-guide-mode="topic" aria-selected="true">Topic Guide</button>
+      <button class="mode-chip" type="button" role="tab" data-guide-mode="search" aria-selected="false">Quick Search</button>
+    </div>
+
     <section class="workspace">
       <aside class="panel filters" aria-label="篩選器">
         <div class="panel-kicker">Navigate by signal</div>
@@ -278,7 +285,7 @@
       const groupByKey = new Map(groups.map((group) => [group.key, group]));
       const presentationById = new Map(data.presentations.map((row) => [row.id, row]));
       const presentationGroupKey = new Map(data.presentations.map((row) => [row.id, groupKey(row)]));
-      const state = { search: '', type: '', category: '', date: '', time: '', location: '', topic: '', selectedKey: groups[0]?.key || '', selectedPresentation: '', detailTopic: '', detailType: '' };
+      const state = { guideMode: 'topic', search: '', type: '', category: '', date: '', time: '', location: '', topic: '', selectedKey: groups[0]?.key || '', selectedPresentation: '', detailTopic: '', detailType: '' };
       const sessionResultsTitle = $('.results-top h2').textContent;
       const sessionResultsHint = $('.search-hint').textContent;
       const defaultEmptyMessage = $('#empty').innerHTML;
@@ -344,10 +351,43 @@
           return `<article class="timetable-day"><div class="timetable-day-head"><h3>${esc(day.label)}</h3><span>${esc(date)} · JST</span></div><div class="timetable-rows">${rows}</div></article>`;
         }).join('');
       }
-      const themes = [...new Set(data.sessions.flatMap((row) => [row.topic_primary, row.topic_secondary]).filter(Boolean))].sort();
       const cloud = $('#topic-cloud');
-      cloud.insertAdjacentHTML('beforeend', '<button class="topic-chip active" type="button" data-topic="">全部</button>');
-      themes.forEach((theme) => cloud.insertAdjacentHTML('beforeend', `<button class="topic-chip" type="button" data-topic="${esc(theme)}">${esc(theme)}</button>`));
+
+      function renderTopicChips() {
+        const themes = [...new Set(data.sessions
+          .filter((row) => !state.category || categoryOf(row) === state.category)
+          .flatMap((row) => [row.topic_primary, row.topic_secondary])
+          .filter(Boolean))].sort();
+        if (state.topic && !themes.includes(state.topic)) state.topic = '';
+        cloud.innerHTML = '<button class="topic-chip active" type="button" data-topic="">全部</button>';
+        themes.forEach((theme) => cloud.insertAdjacentHTML('beforeend', `<button class="topic-chip" type="button" data-topic="${esc(theme)}">${esc(theme)}</button>`));
+        syncTopicChips();
+      }
+
+      const guideModeButtons = [...document.querySelectorAll('[data-guide-mode]')];
+      const searchLabel = document.querySelector('label[for="search"]');
+      const searchInput = $('#search');
+      const searchInlineWrap = document.querySelector('.search-wrap');
+      const topicLabel = [...document.querySelectorAll('.filters .filter-label')].find((label) => label.nextElementSibling === cloud);
+
+      function syncTopicChips() {
+        document.querySelectorAll('.topic-chip').forEach((chip) => chip.classList.toggle('active', chip.dataset.topic === state.topic));
+      }
+
+      function updateGuideModeUi() {
+        const topicMode = state.guideMode === 'topic';
+        [cloud, topicLabel].filter(Boolean).forEach((element) => element.classList.toggle('hidden', !topicMode));
+        [searchLabel, searchInput].filter(Boolean).forEach((element) => element.classList.remove('hidden'));
+        if (searchLabel) searchLabel.textContent = topicMode ? 'Topic / session search' : 'Presentation search';
+        if (searchInput) searchInput.placeholder = topicMode ? 'Topic, session code, or title' : 'Author, title, institution, ID, or session';
+        if (searchInlineWrap) searchInlineWrap.classList.add('hidden');
+        guideModeButtons.forEach((button) => {
+          const active = button.dataset.guideMode === state.guideMode;
+          button.classList.toggle('active', active);
+          button.setAttribute('aria-selected', String(active));
+        });
+        syncTopicChips();
+      }
 
       function scheduleMatches(row, { includeTime = true } = {}) {
         return (!state.type || row.session_type === state.type)
@@ -440,21 +480,34 @@
       }
 
       function renderList() {
+        renderTopicChips();
         renderTimeOptions();
-        const isPresentationSearch = Boolean(normalize(state.search));
+        const isSearchMode = state.guideMode === 'search';
+        const hasSearchQuery = Boolean(normalize(state.search));
         const resultsKicker = $('.results-top .panel-kicker');
         const resultsTitle = $('.results-top h2');
         const searchHint = $('.search-hint');
         const resultList = $('#session-list');
         const empty = $('#empty');
 
-        resultsKicker.textContent = isPresentationSearch ? 'Presentation search' : 'Session map';
-        resultsTitle.textContent = isPresentationSearch ? 'Oral / Poster results' : sessionResultsTitle;
-        searchHint.textContent = isPresentationSearch ? 'Individual presentations matching your search' : sessionResultsHint;
-        resultList.classList.toggle('session-list', !isPresentationSearch);
-        resultList.classList.toggle('presentation-results', isPresentationSearch);
+        resultsKicker.textContent = isSearchMode ? 'Quick search' : 'Session map';
+        resultsTitle.textContent = isSearchMode ? (hasSearchQuery ? 'Oral / Poster results' : 'Find a presentation') : sessionResultsTitle;
+        searchHint.textContent = isSearchMode ? 'Search by author, title, institution, ID, or session' : sessionResultsHint;
+        resultList.classList.toggle('session-list', !isSearchMode);
+        resultList.classList.toggle('presentation-results', isSearchMode && hasSearchQuery);
 
-        if (isPresentationSearch) {
+        if (isSearchMode) {
+          if (!hasSearchQuery) {
+            $('#results-count').textContent = 'Enter a search term';
+            resultList.innerHTML = '';
+            empty.innerHTML = 'Enter an author, title, institution, Abstract ID, or session code to find a presentation.';
+            empty.classList.remove('hidden');
+            state.selectedKey = '';
+            state.selectedPresentation = '';
+            state.detailTopic = '';
+            renderDetail();
+            return;
+          }
           const visible = filteredPresentations();
           const selected = visible.find((row) => row.id === state.selectedPresentation) || visible[0];
           const sessionCount = new Set(visible.map((row) => presentationGroupKey.get(row.id)).filter(Boolean)).size;
@@ -515,8 +568,45 @@
       $('#date').addEventListener('change', (event) => { state.date = event.target.value; renderList(); });
       $('#time').addEventListener('change', (event) => { state.time = event.target.value; renderList(); });
       $('#location').addEventListener('change', (event) => { state.location = event.target.value; renderList(); });
-      $('#reset').addEventListener('click', () => { state.search = ''; state.type = ''; state.category = ''; state.date = ''; state.time = ''; state.location = ''; state.topic = ''; state.detailTopic = ''; state.detailType = ''; $('#search').value = ''; $('#search-inline').value = ''; $('#type').value = ''; $('#category').value = ''; $('#date').value = ''; $('#time').value = ''; $('#location').value = ''; document.querySelectorAll('.topic-chip').forEach((chip) => chip.classList.toggle('active', chip.dataset.topic === '')); renderList(); });
-      cloud.addEventListener('click', (event) => { const chip = event.target.closest('[data-topic]'); if (!chip) return; state.topic = chip.dataset.topic; document.querySelectorAll('.topic-chip').forEach((item) => item.classList.toggle('active', item === chip)); renderList(); });
+      guideModeButtons.forEach((button) => button.addEventListener('click', () => {
+        const mode = button.dataset.guideMode;
+        if (!mode || mode === state.guideMode) return;
+        state.guideMode = mode;
+        state.search = '';
+        state.topic = '';
+        state.selectedKey = '';
+        state.selectedPresentation = '';
+        state.detailTopic = '';
+        state.detailType = '';
+        searchInput.value = '';
+        $('#search-inline').value = '';
+        updateGuideModeUi();
+        renderList();
+      }));
+      $('#reset').addEventListener('click', () => {
+        state.guideMode = 'topic';
+        state.search = '';
+        state.type = '';
+        state.category = '';
+        state.date = '';
+        state.time = '';
+        state.location = '';
+        state.topic = '';
+        state.selectedKey = '';
+        state.selectedPresentation = '';
+        state.detailTopic = '';
+        state.detailType = '';
+        searchInput.value = '';
+        $('#search-inline').value = '';
+        $('#type').value = '';
+        $('#category').value = '';
+        $('#date').value = '';
+        $('#time').value = '';
+        $('#location').value = '';
+        updateGuideModeUi();
+        renderList();
+      });
+      cloud.addEventListener('click', (event) => { const chip = event.target.closest('[data-topic]'); if (!chip) return; state.topic = chip.dataset.topic; syncTopicChips(); renderList(); });
       $('#session-list').addEventListener('click', (event) => {
         const result = event.target.closest('[data-pid]');
         if (result) {
@@ -547,6 +637,7 @@
         document.querySelectorAll('.view-tab').forEach((item) => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', String(active)); });
         ['sessions-view', 'timetable-view'].forEach((id) => document.getElementById(id).classList.toggle('hidden', id !== view));
       }));
+      updateGuideModeUi();
       renderTimetable();
       renderList();
     })();
