@@ -1,0 +1,10 @@
+.artifact_work/
+*.json
+*.csv
+*.mjs
+*.template.html
+aogs2026_guide.html
+aogs2026_as_guide.html
+aogs2026_as_summary.md
+aogs2026_os_summary.md
+.gitigonore
