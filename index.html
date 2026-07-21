@@ -68,9 +68,20 @@
     .search-wrap .search-input { flex: 1; }
     .search-hint { color: var(--muted); font-size: 11px; white-space: nowrap; }
     .session-list { display: grid; gap: 11px; }
+    .presentation-results { display: grid; gap: 11px; }
     .session-card { padding: 17px; border: 1px solid var(--line); border-left: 4px solid var(--orange); border-radius: 14px; background: var(--paper-2); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
     .session-card:hover, .session-card.selected { border-color: #c2b6a3; box-shadow: 0 12px 24px rgba(21,32,43,.09); transform: translateY(-1px); }
     .session-card:focus { outline: 3px solid rgba(47,143,137,.25); outline-offset: 2px; }
+    .presentation-result { width: 100%; padding: 17px; border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 14px; background: var(--paper-2); color: var(--ink); text-align: left; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+    .presentation-result:hover, .presentation-result.selected { border-color: var(--teal); box-shadow: 0 12px 24px rgba(21,32,43,.09); transform: translateY(-1px); }
+    .presentation-result:focus { outline: 3px solid rgba(47,143,137,.25); outline-offset: 2px; }
+    .presentation-result-head { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
+    .presentation-result-id { color: var(--teal); font-size: 11px; font-weight: 850; letter-spacing: .08em; }
+    .presentation-result-title { margin: 6px 0 8px; font-size: 17px; line-height: 1.3; letter-spacing: -.025em; }
+    .presentation-result-author { color: var(--ink); font-size: 12px; line-height: 1.45; }
+    .presentation-result-author b, .presentation-result-context b { color: var(--muted); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+    .presentation-result-context { display: grid; gap: 5px; margin-top: 12px; padding: 11px 12px; border-radius: 10px; background: #f7f4ee; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .presentation-result-context strong { color: var(--ink); }
     .session-head { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
     .session-code { color: var(--orange); font-weight: 850; font-size: 12px; letter-spacing: .08em; }
     .session-title { margin: 5px 0 0; font-size: 17px; line-height: 1.24; letter-spacing: -.025em; }
@@ -241,7 +252,7 @@
       });
       const $ = (selector) => document.querySelector(selector);
       const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-      const normalize = (value) => String(value ?? '').toLowerCase();
+      const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
       const categoryNames = { AS: 'Atmospheric', OS: 'Ocean' };
       const categoryOf = (row) => row.category || String(row.session_code || '').slice(0, 2);
       const groupKey = (row) => `${categoryOf(row)}|${row.session_code}`;
@@ -264,8 +275,13 @@
         if (row.session_title && !group.title) group.title = row.session_title;
       });
       const groups = [...byKey.values()].map((group) => ({ ...group, topics: [...group.topics], schedules: group.schedules.sort((a,b) => `${a.date}${a.time_range}`.localeCompare(`${b.date}${b.time_range}`)), presentations: group.presentations.sort((a,b) => `${a.date}${a.time_range}${a.abstract_id}`.localeCompare(`${b.date}${b.time_range}${b.abstract_id}`)) })).sort((a,b) => a.category.localeCompare(b.category) || a.code.localeCompare(b.code, undefined, {numeric:true}));
+      const groupByKey = new Map(groups.map((group) => [group.key, group]));
       const presentationById = new Map(data.presentations.map((row) => [row.id, row]));
+      const presentationGroupKey = new Map(data.presentations.map((row) => [row.id, groupKey(row)]));
       const state = { search: '', type: '', category: '', date: '', time: '', location: '', topic: '', selectedKey: groups[0]?.key || '', selectedPresentation: '', detailTopic: '', detailType: '' };
+      const sessionResultsTitle = $('.results-top h2').textContent;
+      const sessionResultsHint = $('.search-hint').textContent;
+      const defaultEmptyMessage = $('#empty').innerHTML;
 
       $('#stat-sessions').textContent = groups.length;
       $('#stat-oral').textContent = data.presentations.filter((row) => row.presentation_type === 'Oral').length;
@@ -346,21 +362,38 @@
         return group.schedules.filter((row) => scheduleMatches(row, { includeTime }));
       }
 
+      function presentationSearchText(row) {
+        return [
+          row.category,
+          categoryNames[categoryOf(row)],
+          row.abstract_id,
+          row.session_code,
+          row.session_title,
+          row.presentation_title,
+          row.presenting_author,
+          row.institution
+        ].join(' ');
+      }
+
+      function presentationSearchMatches(row) {
+        const query = normalize(state.search);
+        return !query || normalize(presentationSearchText(row)).includes(query);
+      }
+
       function presentationMatches(row) {
         return (!state.type || row.presentation_type === state.type)
           && (!state.category || categoryOf(row) === state.category)
           && (!state.date || row.date === state.date)
           && (!state.time || row.program_slot === state.time)
-          && (!state.location || row.venue === state.location);
+          && (!state.location || row.venue === state.location)
+          && (!state.topic || [row.topic_primary, row.topic_secondary].includes(state.topic));
       }
 
       function detailPresentationMatches(row) {
         const selectedType = state.detailType || state.type;
-        return (!selectedType || row.presentation_type === selectedType)
-          && (!state.category || categoryOf(row) === state.category)
-          && (!state.date || row.date === state.date)
-          && (!state.time || row.program_slot === state.time)
-          && (!state.location || row.venue === state.location);
+        return presentationMatches(row)
+          && (!selectedType || row.presentation_type === selectedType)
+          && presentationSearchMatches(row);
       }
 
       function renderTimeOptions() {
@@ -380,6 +413,22 @@
         });
       }
 
+      function filteredPresentations() {
+        return data.presentations.filter((row) => presentationMatches(row) && presentationSearchMatches(row));
+      }
+
+      function presentationResultHtml(row) {
+        const type = row.presentation_type || 'Presentation';
+        const group = groupByKey.get(presentationGroupKey.get(row.id));
+        const presentationId = [type, row.abstract_id, row.presentation_no ? `#${row.presentation_no}` : ''].filter(Boolean).join(' · ');
+        const author = [row.presenting_author, row.institution].filter(Boolean).join(' · ') || 'Author unavailable';
+        const schedule = [row.day || row.date, row.program_slot || row.time_range].filter(Boolean).join(' · ') || 'Schedule unavailable';
+        const location = [row.venue, row.room].filter(Boolean).join(' · ') || 'Location unavailable';
+        const sessionCode = [row.category, row.session_code].filter(Boolean).join(' · ');
+        const sessionTitle = group?.title || row.session_title || 'Session title unavailable';
+        return `<button class="presentation-result ${row.id === state.selectedPresentation ? 'selected' : ''}" type="button" data-pid="${esc(row.id)}" aria-label="${esc(`${type}: ${row.presentation_title || 'Untitled presentation'}`)}"><div class="presentation-result-head"><div><div class="presentation-result-id">${esc(presentationId || type)}</div><h3 class="presentation-result-title">${esc(row.presentation_title || 'Untitled presentation')}</h3></div><span class="type-pill ${type.toLowerCase()}">${esc(type)}</span></div><div class="presentation-result-author"><b>Author</b> ${esc(author)}</div><div class="presentation-result-context"><div><b>Schedule</b> ${esc(schedule)}</div><div><b>Location</b> ${esc(location)}</div><div><b>Session</b> <strong>${esc(sessionCode || 'Session')}</strong> · ${esc(sessionTitle)}</div></div></button>`;
+      }
+
       function cardHtml(group) {
         const typePills = [...group.types].sort().map((type) => `<span class="type-pill ${type.toLowerCase()}">${type}</span>`).join('');
         const topicTags = group.topics.slice(0, 3).map((topic) => `<span class="theme-tag">${esc(topic)}</span>`).join('');
@@ -392,10 +441,39 @@
 
       function renderList() {
         renderTimeOptions();
+        const isPresentationSearch = Boolean(normalize(state.search));
+        const resultsKicker = $('.results-top .panel-kicker');
+        const resultsTitle = $('.results-top h2');
+        const searchHint = $('.search-hint');
+        const resultList = $('#session-list');
+        const empty = $('#empty');
+
+        resultsKicker.textContent = isPresentationSearch ? 'Presentation search' : 'Session map';
+        resultsTitle.textContent = isPresentationSearch ? 'Oral / Poster results' : sessionResultsTitle;
+        searchHint.textContent = isPresentationSearch ? 'Individual presentations matching your search' : sessionResultsHint;
+        resultList.classList.toggle('session-list', !isPresentationSearch);
+        resultList.classList.toggle('presentation-results', isPresentationSearch);
+
+        if (isPresentationSearch) {
+          const visible = filteredPresentations();
+          const selected = visible.find((row) => row.id === state.selectedPresentation) || visible[0];
+          const sessionCount = new Set(visible.map((row) => presentationGroupKey.get(row.id)).filter(Boolean)).size;
+          state.selectedPresentation = selected?.id || '';
+          state.selectedKey = selected ? presentationGroupKey.get(selected.id) || '' : '';
+          if (!selected) state.detailTopic = '';
+          $('#results-count').textContent = `${visible.length} presentations · ${sessionCount} sessions`;
+          resultList.innerHTML = visible.map(presentationResultHtml).join('');
+          empty.innerHTML = 'No Oral or Poster presentations match the current search and filters.';
+          empty.classList.toggle('hidden', visible.length > 0);
+          renderDetail();
+          return;
+        }
+
         const visible = filteredGroups();
         $('#results-count').textContent = `${visible.length} / ${groups.length} sessions`;
-        $('#session-list').innerHTML = visible.map(cardHtml).join('');
-        $('#empty').classList.toggle('hidden', visible.length > 0);
+        resultList.innerHTML = visible.map(cardHtml).join('');
+        empty.innerHTML = defaultEmptyMessage;
+        empty.classList.toggle('hidden', visible.length > 0);
         if (!visible.length) { state.selectedKey = ''; state.selectedPresentation = ''; state.detailTopic = ''; }
         else if (!visible.some((group) => group.key === state.selectedKey)) { state.selectedKey = visible[0].key; state.selectedPresentation = ''; state.detailTopic = ''; }
         renderDetail();
@@ -439,7 +517,28 @@
       $('#location').addEventListener('change', (event) => { state.location = event.target.value; renderList(); });
       $('#reset').addEventListener('click', () => { state.search = ''; state.type = ''; state.category = ''; state.date = ''; state.time = ''; state.location = ''; state.topic = ''; state.detailTopic = ''; state.detailType = ''; $('#search').value = ''; $('#search-inline').value = ''; $('#type').value = ''; $('#category').value = ''; $('#date').value = ''; $('#time').value = ''; $('#location').value = ''; document.querySelectorAll('.topic-chip').forEach((chip) => chip.classList.toggle('active', chip.dataset.topic === '')); renderList(); });
       cloud.addEventListener('click', (event) => { const chip = event.target.closest('[data-topic]'); if (!chip) return; state.topic = chip.dataset.topic; document.querySelectorAll('.topic-chip').forEach((item) => item.classList.toggle('active', item === chip)); renderList(); });
-      $('#session-list').addEventListener('click', (event) => { const card = event.target.closest('[data-key]'); if (!card) return; state.selectedKey = card.dataset.key; state.selectedPresentation = ''; state.detailTopic = ''; state.detailType = ''; renderList(); $('#detail-panel').scrollIntoView({behavior:'smooth', block:'start'}); });
+      $('#session-list').addEventListener('click', (event) => {
+        const result = event.target.closest('[data-pid]');
+        if (result) {
+          const presentation = presentationById.get(result.dataset.pid);
+          if (!presentation) return;
+          state.selectedPresentation = presentation.id;
+          state.selectedKey = presentationGroupKey.get(presentation.id) || '';
+          state.detailTopic = '';
+          state.detailType = '';
+          renderList();
+          $('#detail-panel').scrollIntoView({behavior:'smooth', block:'start'});
+          return;
+        }
+        const card = event.target.closest('[data-key]');
+        if (!card) return;
+        state.selectedKey = card.dataset.key;
+        state.selectedPresentation = '';
+        state.detailTopic = '';
+        state.detailType = '';
+        renderList();
+        $('#detail-panel').scrollIntoView({behavior:'smooth', block:'start'});
+      });
       $('#session-list').addEventListener('keydown', (event) => { if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('[data-key]')) { event.preventDefault(); event.target.click(); } });
       $('#detail-panel').addEventListener('click', (event) => { const row = event.target.closest('[data-pid]'); if (!row) return; state.selectedPresentation = row.dataset.pid; renderDetail(); });
       $('#detail-panel').addEventListener('change', (event) => { if (event.target.matches('#detail-topic')) state.detailTopic = event.target.value; else if (event.target.matches('#detail-type')) state.detailType = event.target.value; else return; state.selectedPresentation = ''; renderDetail(); });
