@@ -65,6 +65,7 @@
   const presentationsById = new Map();
   const groupByKey = new Map();
   const timetableTargets = new Map();
+  const timeOptionLabels = new Map();
 
   const categoryOf = (row) => row.category || String(row.session_code || "").slice(0, 2);
   const groupKeyOf = (row) => `${categoryOf(row)}|${row.session_code}`;
@@ -254,7 +255,7 @@
     return range ? timeKey(range.start, range.end) : "";
   }
 
-  function formatTimeOption(value) {
+  function formatTimeRange(value) {
     const [start, end] = String(value).split("-").map(Number);
     if (!Number.isFinite(start) || !Number.isFinite(end)) return value;
     const format = (minutes) => {
@@ -265,9 +266,36 @@
     return `${format(start)}–${format(end)}`;
   }
 
+  function timeTag(rows) {
+    const labels = rows.map(({ schedule }) => String(schedule.program_slot || "").trim());
+    const namedSlot = ["AM1", "AM2", "PM1", "PM2"]
+      .find((name) => labels.some((label) => label.toUpperCase().startsWith(name)));
+    if (namedSlot) return namedSlot;
+    const poster = rows.some(({ schedule, group }) =>
+      scheduleTypeOf(schedule, group.category) === "Poster"
+      || /^Poster\b/i.test(String(schedule.program_slot || "")));
+    return poster ? "Poster" : "";
+  }
+
+  function formatTimeOption(value) {
+    return timeOptionLabels.get(value) || formatTimeRange(value);
+  }
+
   function buildTimeOptions() {
-    const slots = [...new Set(groups.flatMap((group) => group.schedules.map(scheduleTimeKey).filter(Boolean)))]
+    const schedulesByTime = new Map();
+    groups.forEach((group) => group.schedules.forEach((schedule) => {
+      const key = scheduleTimeKey(schedule);
+      if (!key) return;
+      if (!schedulesByTime.has(key)) schedulesByTime.set(key, []);
+      schedulesByTime.get(key).push({ schedule, group });
+    }));
+    const slots = [...schedulesByTime.keys()]
       .sort((a, b) => Number(a.split("-")[0]) - Number(b.split("-")[0]) || Number(a.split("-")[1]) - Number(b.split("-")[1]));
+    timeOptionLabels.clear();
+    slots.forEach((slot) => {
+      const tag = timeTag(schedulesByTime.get(slot));
+      timeOptionLabels.set(slot, [tag, formatTimeRange(slot)].filter(Boolean).join(" · "));
+    });
     const options = slots.map((slot) => `<option value="${esc(slot)}">${esc(formatTimeOption(slot))}</option>`).join("");
     $("#time-filter").innerHTML = `<option value="">所有時間</option>${options}`;
     $("#sheet-time-filter").innerHTML = `<option value="">所有時間</option>${options}`;
