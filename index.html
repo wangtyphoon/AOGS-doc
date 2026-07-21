@@ -220,6 +220,25 @@
   <script>
     (() => {
       const data = JSON.parse(document.getElementById('site-data').textContent);
+      data.sessions.push({
+        session_type: 'Special',
+        category: 'AS',
+        source_slot_id: 'SS02',
+        session_code: 'SS02',
+        session_title: 'AS Section DL + KL / AS Section Meeting',
+        date: '2026-08-05',
+        day: 'Wed, Aug 05',
+        time_range: '11:00 AM - 12:45 PM',
+        duration_minutes: '105',
+        venue: 'FICC',
+        room: 'FICC-Main',
+        presentation_count: '0',
+        poster_count: '0',
+        convener: 'Yali LUO (Nanjing University of Information Science & Technology), Kosuke ITO (Kyoto University)',
+        session_chairs: '',
+        source_url: 'https://www.asiaoceania.org/AOGS2026/KeyHighlights#AS',
+        program_slot: 'AM2 11:00 - 12:45'
+      });
       const $ = (selector) => document.querySelector(selector);
       const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
       const normalize = (value) => String(value ?? '').toLowerCase();
