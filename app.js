@@ -66,6 +66,7 @@
   const groupByKey = new Map();
   const timetableTargets = new Map();
   const timeOptionLabels = new Map();
+  const timeFilterValueByRange = new Map();
 
   const categoryOf = (row) => row.category || String(row.session_code || "").slice(0, 2);
   const groupKeyOf = (row) => `${categoryOf(row)}|${row.session_code}`;
@@ -278,7 +279,12 @@
   }
 
   function formatTimeOption(value) {
-    return timeOptionLabels.get(value) || formatTimeRange(value);
+    return timeOptionLabels.get(value) || formatTimeRange(String(value).replace(/^time:/, ""));
+  }
+
+  function scheduleTimeFilterValue(schedule) {
+    const rangeKey = scheduleTimeKey(schedule);
+    return timeFilterValueByRange.get(rangeKey) || (rangeKey ? `time:${rangeKey}` : "");
   }
 
   function buildTimeOptions() {
@@ -289,14 +295,26 @@
       if (!schedulesByTime.has(key)) schedulesByTime.set(key, []);
       schedulesByTime.get(key).push({ schedule, group });
     }));
-    const slots = [...schedulesByTime.keys()]
-      .sort((a, b) => Number(a.split("-")[0]) - Number(b.split("-")[0]) || Number(a.split("-")[1]) - Number(b.split("-")[1]));
     timeOptionLabels.clear();
-    slots.forEach((slot) => {
+    timeFilterValueByRange.clear();
+    const optionsByValue = new Map();
+    [...schedulesByTime.keys()].forEach((slot) => {
       const tag = timeTag(schedulesByTime.get(slot));
-      timeOptionLabels.set(slot, [tag, formatTimeRange(slot)].filter(Boolean).join(" · "));
+      const value = tag ? `tag:${tag}` : `time:${slot}`;
+      timeFilterValueByRange.set(slot, value);
+      if (!optionsByValue.has(value)) optionsByValue.set(value, { tag, ranges: [] });
+      optionsByValue.get(value).ranges.push(slot);
     });
-    const options = slots.map((slot) => `<option value="${esc(slot)}">${esc(formatTimeOption(slot))}</option>`).join("");
+    const tagOrder = { AM1: 0, AM2: 1, PM1: 2, Poster: 3, PM2: 4 };
+    const optionsData = [...optionsByValue.entries()].map(([value, option]) => {
+      const ranges = option.ranges.sort((a, b) => Number(a.split("-")[0]) - Number(b.split("-")[0]));
+      const label = option.tag
+        ? (["AM1", "AM2"].includes(option.tag) ? `${option.tag} · ${formatTimeRange(ranges[0])}` : option.tag)
+        : formatTimeRange(ranges[0]);
+      timeOptionLabels.set(value, label);
+      return { value, label, start: Number(ranges[0].split("-")[0]), order: tagOrder[option.tag] ?? 99 };
+    }).sort((a, b) => a.start - b.start || a.order - b.order);
+    const options = optionsData.map((option) => `<option value="${esc(option.value)}">${esc(option.label)}</option>`).join("");
     $("#time-filter").innerHTML = `<option value="">所有時間</option>${options}`;
     $("#sheet-time-filter").innerHTML = `<option value="">所有時間</option>${options}`;
   }
@@ -395,7 +413,7 @@
   function scheduleMatches(schedule, group, includeTime = true) {
     return (!state.type || scheduleTypeOf(schedule, group.category) === state.type)
       && (!state.date || schedule.date === state.date)
-      && (!includeTime || !state.time || scheduleTimeKey(schedule) === state.time)
+      && (!includeTime || !state.time || scheduleTimeFilterValue(schedule) === state.time)
       && (!state.location || venueGroup(schedule.venue) === state.location);
   }
 
@@ -445,7 +463,7 @@
     if (state.categories.length && !state.categories.includes(category)) return false;
     if (state.type && type !== state.type) return false;
     if (state.date && row.date !== state.date) return false;
-    if (state.time && scheduleTimeKey(row) !== state.time) return false;
+    if (state.time && scheduleTimeFilterValue(row) !== state.time) return false;
     if (state.location && venueGroup(row.venue) !== state.location) return false;
     if (state.topic && ![row.topic_primary, row.topic_secondary].includes(state.topic)) return false;
     return normalize(presentationSearchText(row)).includes(normalize(state.query));
@@ -807,7 +825,8 @@
     const event = [...events].sort((a, b) => a.start - b.start)[0];
     state.categories = [event.category];
     state.date = state.timetableDate;
-    state.time = timeKey(event.start, event.end);
+    const rangeKey = timeKey(event.start, event.end);
+    state.time = timeFilterValueByRange.get(rangeKey) || `time:${rangeKey}`;
     state.type = "";
     state.topic = "";
     state.query = "";
