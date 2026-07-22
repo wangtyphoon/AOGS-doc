@@ -22,19 +22,80 @@
     SS: "Special Session",
     KEY: "Key & Special"
   };
-  const TOPIC_DISPLAY_NAMES = {
-    "季風／ENSO／MJO／氣候變異": "季風與氣候",
-    "空品／氣膠／大氣化學": "空品與化學",
-    "氣象 AI／ML／再分析": "氣象 AI",
-    "海洋動力／環流／波浪／潮汐": "海洋動力",
-    "海洋環境／生地化學／生態": "海洋環境",
-    "海氣交互作用／海洋熱浪／海洋氣候": "海氣作用",
-    "雲／輻射／能量": "雲與輻射",
-    "傳統物理數值天氣預報／模式": "數值預報",
-    "極端天氣／降水／對流／颱風": "極端天氣",
-    "邊界層／陸氣交互作用／都市氣候": "陸氣與都市",
-    "觀測／遙測／資料方法": "觀測與資料",
-    Other: "其他"
+  const TOPIC_DEFINITIONS = [
+    ["AS-T01", "Extreme Weather, Severe Convection & Tropical Cyclones"],
+    ["AS-T02", "Monsoons, Climate Variability & Predictability"],
+    ["AS-T03", "Meteorological AI, Data Assimilation & High-Resolution Forecasting"],
+    ["AS-T04", "Air Quality, Atmospheric Chemistry & Greenhouse Gases"],
+    ["AS-T05", "Clouds, Aerosols, Radiation & Climate Intervention"],
+    ["AS-T06", "Atmospheric Observations, Remote Sensing & Multi-Source Sensing"],
+    ["AS-T07", "Boundary Layer, Land–Atmosphere Interactions & Urban Climate"],
+    ["AS-T08", "Atmospheric Dynamics, Applications & Integrative Topics"],
+    ["BG-T01", "Carbon Cycling, Greenhouse Gases & Ecosystem Exchange"],
+    ["BG-T02", "Environmental Biogeochemistry, Ecological Observation & Global Change"],
+    ["HS-T01", "Hydrology, Rivers & Hydrometeorological Modeling"],
+    ["HS-T02", "Climate Change, Water Resources & Groundwater Management"],
+    ["HS-T03", "Floods, Droughts & Hydrological Hazards"],
+    ["HS-T04", "Hydrological AI, Remote Sensing & Innovative Prediction"],
+    ["HS-T05", "Ecohydrology, Human Activities & Aquatic Environments"],
+    ["IG-T01", "Multi-Hazard Events & Disaster Resilience"],
+    ["IG-T02", "Climate and Environmental Change & Societal Impacts"],
+    ["IG-T03", "AI, Causal Analysis & Earth Data Methods"],
+    ["IG-T04", "Pollution, Environmental Health & Sustainable Energy"],
+    ["IG-T05", "Land Surface, Coasts, Water Cycle & Cross-Domain Observations"],
+    ["OS-T01", "Ocean Dynamics, Circulation, Mixing & Prediction"],
+    ["OS-T02", "Coasts, Sea Level & Marine Hazards"],
+    ["OS-T03", "Air–Sea Interactions, Climate Variability & Polar Oceans"],
+    ["OS-T04", "Marine Biogeochemistry, Ecology & Integrated Oceanography"],
+    ["PS-T01", "Planetary Environments, Atmospheric Plasmas & Astrobiology"],
+    ["PS-T02", "Solid Bodies, Internal Structure & Small-Body Evolution"],
+    ["PS-T03", "Planetary Missions, Exploration & Remote Sensing"],
+    ["ST-T01", "Sun, Heliosphere & Space Plasmas"],
+    ["ST-T02", "Magnetosphere–Ionosphere–Thermosphere Coupling"],
+    ["ST-T03", "Space Weather, Ionospheric Disturbances & Monitoring"],
+    ["SE-T01", "Earthquakes, Seismology & Geological Hazards"],
+    ["SE-T02", "Volcanoes, Magma, Mineral Deposits & Geochemistry"],
+    ["SE-T03", "Plate Tectonics, Lithosphere & Deep Earth"],
+    ["SE-T04", "Solid-Earth Observation, Inversion & Data Methods"],
+    ["KEY-T01", "Keynotes, Section Meetings & Special Programs"]
+  ];
+  const TOPIC_DISPLAY_NAMES = Object.fromEntries(TOPIC_DEFINITIONS);
+  const TOPIC_SHORT_DISPLAY_NAMES = {
+    "AS-T01": "Extreme Weather",
+    "AS-T02": "Monsoons & Climate",
+    "AS-T03": "Meteorological AI",
+    "AS-T04": "Air Quality & Chemistry",
+    "AS-T05": "Clouds & Radiation",
+    "AS-T06": "Observations & Remote Sensing",
+    "AS-T07": "Boundary Layer & Urban Climate",
+    "AS-T08": "Atmospheric Dynamics",
+    "BG-T01": "Carbon Cycling",
+    "BG-T02": "Biogeochemistry & Global Change",
+    "HS-T01": "Hydrology & Rivers",
+    "HS-T02": "Climate Change & Water Resources",
+    "HS-T03": "Floods & Droughts",
+    "HS-T04": "Hydrological AI",
+    "HS-T05": "Ecohydrology & Water Environment",
+    "IG-T01": "Multi-Hazard Resilience",
+    "IG-T02": "Climate Change & Societal Impacts",
+    "IG-T03": "AI & Earth Data",
+    "IG-T04": "Pollution & Environmental Health",
+    "IG-T05": "Land, Coasts & Water Cycle",
+    "OS-T01": "Ocean Dynamics & Circulation",
+    "OS-T02": "Coasts & Sea Level",
+    "OS-T03": "Air–Sea & Polar Oceans",
+    "OS-T04": "Marine Biogeochemistry",
+    "PS-T01": "Planetary Environments",
+    "PS-T02": "Solid Bodies & Deep Interiors",
+    "PS-T03": "Planetary Missions & Remote Sensing",
+    "ST-T01": "Sun & Space Plasmas",
+    "ST-T02": "Magnetosphere Coupling",
+    "ST-T03": "Space Weather",
+    "SE-T01": "Earthquakes & Seismology",
+    "SE-T02": "Volcanoes & Geochemistry",
+    "SE-T03": "Plate Tectonics & Deep Earth",
+    "SE-T04": "Solid-Earth Observation",
+    "KEY-T01": "Keynotes & Special Programs"
   };
   const BATCH_SIZE = 20;
 
@@ -54,7 +115,7 @@
     view: "guide",
     scope: "sessions",
     query: "",
-    categories: [],
+    categories: ["AS"],
     type: "",
     date: "",
     time: "",
@@ -94,7 +155,7 @@
   const scheduleTypeOf = (row, category) =>
     category === "KEY" ? row.program_code || row.session_type : row.session_type || row.program_code;
   const categoryName = (category) => CATEGORY_NAMES[category] || category;
-  const topicDisplayName = (topic) => topic ? TOPIC_DISPLAY_NAMES[topic] || topic : "全部";
+  const topicDisplayName = (topic) => topic ? TOPIC_DISPLAY_NAMES[topic] || topic : "All topics";
   const categoryClass = (category) => `category-${String(category || "").toLowerCase()}`;
   const venueGroup = (venue) => {
     const value = String(venue || "").trim().toUpperCase();
@@ -366,16 +427,24 @@
   }
 
   function allTopics() {
-    return [...new Set(groups.flatMap((group) => group.topics).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+    const selectedCategories = state.categories.length ? new Set(state.categories) : null;
+    const availableTopics = new Set(groups
+      .filter((group) => !selectedCategories || selectedCategories.has(group.category))
+      .flatMap((group) => group.topics)
+      .filter(Boolean));
+    return TOPIC_DEFINITIONS
+      .map(([topic]) => topic)
+      .filter((topic) => availableTopics.has(topic));
   }
 
   function renderTopicStrip() {
     const topics = allTopics();
     $("#topic-strip").innerHTML = ["", ...topics].map((topic) => {
       const active = state.topic === topic;
-      const fullLabel = topic || "顯示全部主題";
-      const accessibilityLabel = topic ? `主題：${topic}` : fullLabel;
-      return `<button class="topic-chip${active ? " active" : ""}" type="button" data-topic="${esc(topic)}" aria-pressed="${active}" aria-label="${esc(accessibilityLabel)}" title="${esc(fullLabel)}">${esc(topicDisplayName(topic))}</button>`;
+      const fullLabel = topic ? topicDisplayName(topic) : "All topics";
+      const accessibilityLabel = topic ? `Theme: ${topicDisplayName(topic)}` : fullLabel;
+      const displayLabel = topic ? TOPIC_SHORT_DISPLAY_NAMES[topic] || topicDisplayName(topic) : fullLabel;
+      return `<button class="topic-chip${active ? " active" : ""}" type="button" data-topic="${esc(topic)}" aria-pressed="${active}" aria-label="${esc(accessibilityLabel)}" title="${esc(fullLabel)}">${esc(displayLabel)}</button>`;
     }).join("");
   }
 
@@ -483,12 +552,13 @@
   function presentationMatches(row) {
     const category = categoryOf(row);
     const type = presentationTypeOf(row);
+    const group = groupByKey.get(groupKeyOf(row));
     if (state.categories.length && !state.categories.includes(category)) return false;
     if (state.type && type !== state.type) return false;
     if (state.date && row.date !== state.date) return false;
     if (state.time && scheduleTimeFilterValue(row) !== state.time) return false;
     if (state.location && venueGroup(row.venue) !== state.location) return false;
-    if (state.topic && ![row.topic_primary, row.topic_secondary].includes(state.topic)) return false;
+    if (state.topic && !group?.topics.includes(state.topic)) return false;
     return normalize(presentationSearchText(row)).includes(normalize(state.query));
   }
 
@@ -538,7 +608,7 @@
     const schedule = visibleSchedules[0];
     const extraSchedules = Math.max(0, visibleSchedules.length - 1);
     const typePills = group.types.map((type) => `<span class="type-pill ${typeClass(type)}">${esc(type)}</span>`).join("");
-    const tags = group.topics.slice(0, 3).map((topic) => `<span class="theme-tag">${esc(topic)}</span>`).join("");
+    const tags = group.topics.slice(0, 1).map((topic) => `<span class="theme-tag">${esc(topicDisplayName(topic))}</span>`).join("");
     const countParts = [
       group.counts.oral && `${group.counts.oral} Oral`,
       group.counts.poster && `${group.counts.poster} Poster`,
@@ -569,6 +639,7 @@
   function presentationCardHtml(row) {
     const type = presentationTypeOf(row) || "Presentation";
     const group = groupByKey.get(groupKeyOf(row));
+    const topic = group?.topics[0];
     const author = [row.presenting_author, row.institution].filter(Boolean).join(" · ") || "作者資料待確認";
     const schedule = [row.day || row.date, row.program_slot || row.time_range].filter(Boolean).join(" · ");
     const room = [row.venue, row.room].filter(Boolean).join(" · ");
@@ -583,6 +654,7 @@
             <button class="card-title-button" type="button" data-open-presentation="${esc(row.id)}" aria-label="查看 ${esc(row.abstract_id || "題目")} 詳情">${esc(row.presentation_title || "Untitled presentation")}</button>
           </div>
         </div>
+        ${topic ? `<div class="card-tags"><span class="theme-tag">${esc(topicDisplayName(topic))}</span></div>` : ""}
         <div class="presentation-meta"><span><strong>作者</strong> ${esc(author)}</span></div>
         <div class="presentation-meta">
           <span><strong>Session</strong> ${esc(row.session_code)} · ${esc(group?.title || row.session_title || "")}</span>
@@ -744,7 +816,7 @@
     $("#detail-back").classList.add("hidden");
     const source = group.schedules.find((schedule) => schedule.source_url)?.source_url;
     const peopleSource = group.schedules.find((schedule) => schedule.convener || schedule.session_chairs);
-    const tags = group.topics.map((topic) => `<span class="theme-tag">${esc(topic)}</span>`).join("");
+    const tags = group.topics.map((topic) => `<span class="theme-tag">${esc(topicDisplayName(topic))}</span>`).join("");
     $("#detail-content").innerHTML = `
       <div class="detail-kicker">${esc(group.category)} · ${esc(categoryName(group.category))} · ${esc(group.code)}</div>
       <h2 id="detail-title">${esc(group.title || "Untitled session")}</h2>
@@ -788,9 +860,11 @@
     const type = presentationTypeOf(row) || "Presentation";
     const schedule = [row.day || row.date, row.program_slot || row.time_range].filter(Boolean).join(" · ");
     const room = [row.venue, row.room].filter(Boolean).join(" · ");
+    const topic = currentDetailGroup?.topics[0];
     $("#detail-content").innerHTML = `
       <div class="detail-kicker">${esc(type)} · ${esc(row.abstract_id || row.session_code)}</div>
       <h2 id="detail-title">${esc(row.presentation_title || "Untitled presentation")}</h2>
+      ${topic ? `<div class="detail-tags"><span class="theme-tag">${esc(topicDisplayName(topic))}</span></div>` : ""}
       <section class="detail-section">
         <div class="detail-people">
           <div><b>作者</b>${esc(row.presenting_author || "作者資料待確認")}</div>
@@ -1026,6 +1100,7 @@
       state.categories = input.checked
         ? [...state.categories, input.value]
         : state.categories.filter((category) => category !== input.value);
+      if (state.topic && !allTopics().includes(state.topic)) state.topic = "";
       state.visibleCount = BATCH_SIZE;
       syncControls();
       renderResults();
