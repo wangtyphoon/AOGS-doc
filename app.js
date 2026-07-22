@@ -23,79 +23,79 @@
     KEY: "Key & Special"
   };
   const TOPIC_DEFINITIONS = [
-    ["AS-T01", "Extreme Weather, Severe Convection & Tropical Cyclones"],
-    ["AS-T02", "Monsoons, Climate Variability & Predictability"],
-    ["AS-T03", "Meteorological AI, Data Assimilation & High-Resolution Forecasting"],
-    ["AS-T04", "Air Quality, Atmospheric Chemistry & Greenhouse Gases"],
-    ["AS-T05", "Clouds, Aerosols, Radiation & Climate Intervention"],
-    ["AS-T06", "Atmospheric Observations, Remote Sensing & Multi-Source Sensing"],
-    ["AS-T07", "Boundary Layer, Land–Atmosphere Interactions & Urban Climate"],
-    ["AS-T08", "Atmospheric Dynamics, Applications & Integrative Topics"],
-    ["BG-T01", "Carbon Cycling, Greenhouse Gases & Ecosystem Exchange"],
-    ["BG-T02", "Environmental Biogeochemistry, Ecological Observation & Global Change"],
-    ["HS-T01", "Hydrology, Rivers & Hydrometeorological Modeling"],
-    ["HS-T02", "Climate Change, Water Resources & Groundwater Management"],
-    ["HS-T03", "Floods, Droughts & Hydrological Hazards"],
-    ["HS-T04", "Hydrological AI, Remote Sensing & Innovative Prediction"],
-    ["HS-T05", "Ecohydrology, Human Activities & Aquatic Environments"],
-    ["IG-T01", "Multi-Hazard Events & Disaster Resilience"],
-    ["IG-T02", "Climate and Environmental Change & Societal Impacts"],
-    ["IG-T03", "AI, Causal Analysis & Earth Data Methods"],
-    ["IG-T04", "Pollution, Environmental Health & Sustainable Energy"],
-    ["IG-T05", "Land Surface, Coasts, Water Cycle & Cross-Domain Observations"],
-    ["OS-T01", "Ocean Dynamics, Circulation, Mixing & Prediction"],
-    ["OS-T02", "Coasts, Sea Level & Marine Hazards"],
-    ["OS-T03", "Air–Sea Interactions, Climate Variability & Polar Oceans"],
-    ["OS-T04", "Marine Biogeochemistry, Ecology & Integrated Oceanography"],
-    ["PS-T01", "Planetary Environments, Atmospheric Plasmas & Astrobiology"],
-    ["PS-T02", "Solid Bodies, Internal Structure & Small-Body Evolution"],
-    ["PS-T03", "Planetary Missions, Exploration & Remote Sensing"],
-    ["ST-T01", "Sun, Heliosphere & Space Plasmas"],
-    ["ST-T02", "Magnetosphere–Ionosphere–Thermosphere Coupling"],
-    ["ST-T03", "Space Weather, Ionospheric Disturbances & Monitoring"],
-    ["SE-T01", "Earthquakes, Seismology & Geological Hazards"],
-    ["SE-T02", "Volcanoes, Magma, Mineral Deposits & Geochemistry"],
-    ["SE-T03", "Plate Tectonics, Lithosphere & Deep Earth"],
-    ["SE-T04", "Solid-Earth Observation, Inversion & Data Methods"],
-    ["KEY-T01", "Keynotes, Section Meetings & Special Programs"]
+    ["AS-T01", "極端天氣、強對流與熱帶氣旋"],
+    ["AS-T02", "季風、氣候變異與可預報性"],
+    ["AS-T03", "氣象人工智慧、資料同化與高解析預報"],
+    ["AS-T04", "空氣品質、大氣化學與溫室氣體"],
+    ["AS-T05", "雲、氣膠、輻射與氣候介入"],
+    ["AS-T06", "大氣觀測、遙測與多源感測"],
+    ["AS-T07", "邊界層、陸氣作用與都市氣候"],
+    ["AS-T08", "大氣動力、應用與綜合議題"],
+    ["BG-T01", "碳循環、溫室氣體與生態系交換"],
+    ["BG-T02", "環境生地化學、生態觀測與全球變遷"],
+    ["HS-T01", "水文、河川與水文氣象模式"],
+    ["HS-T02", "氣候變遷、水資源與地下水管理"],
+    ["HS-T03", "洪水、乾旱與水文災害"],
+    ["HS-T04", "水文人工智慧、遙測與創新預測"],
+    ["HS-T05", "生態水文、人類活動與水環境"],
+    ["IG-T01", "多重自然災害與防災韌性"],
+    ["IG-T02", "氣候與環境變遷及社會衝擊"],
+    ["IG-T03", "人工智慧、因果分析與地球資料方法"],
+    ["IG-T04", "污染、環境健康與永續能源"],
+    ["IG-T05", "地表、海岸、水循環與跨域觀測"],
+    ["OS-T01", "海洋動力、環流、混合與預報"],
+    ["OS-T02", "海岸、海平面與海洋災害"],
+    ["OS-T03", "海氣作用、氣候變異與極區海洋"],
+    ["OS-T04", "海洋生地化學、生態與綜合海洋學"],
+    ["PS-T01", "行星環境、大氣電漿與天體生物學"],
+    ["PS-T02", "固態天體、內部構造與小天體演化"],
+    ["PS-T03", "行星任務、探測與遙測"],
+    ["ST-T01", "太陽、日球層與太空電漿"],
+    ["ST-T02", "磁層—電離層—熱層耦合"],
+    ["ST-T03", "太空天氣、電離層擾動與監測"],
+    ["SE-T01", "地震、地震學與地質災害"],
+    ["SE-T02", "火山、岩漿、礦床與地球化學"],
+    ["SE-T03", "板塊構造、岩石圈與深部地球"],
+    ["SE-T04", "固體地球觀測、反演與資料方法"],
+    ["KEY-T01", "主題演講、分區會議與特殊議程"]
   ];
   const TOPIC_DISPLAY_NAMES = Object.fromEntries(TOPIC_DEFINITIONS);
   const TOPIC_SHORT_DISPLAY_NAMES = {
-    "AS-T01": "Extreme Weather",
-    "AS-T02": "Monsoons & Climate",
-    "AS-T03": "Meteorological AI",
-    "AS-T04": "Air Quality & Chemistry",
-    "AS-T05": "Clouds & Radiation",
-    "AS-T06": "Observations & Remote Sensing",
-    "AS-T07": "Boundary Layer & Urban Climate",
-    "AS-T08": "Atmospheric Dynamics",
-    "BG-T01": "Carbon Cycling",
-    "BG-T02": "Biogeochemistry & Global Change",
-    "HS-T01": "Hydrology & Rivers",
-    "HS-T02": "Climate Change & Water Resources",
-    "HS-T03": "Floods & Droughts",
-    "HS-T04": "Hydrological AI",
-    "HS-T05": "Ecohydrology & Water Environment",
-    "IG-T01": "Multi-Hazard Resilience",
-    "IG-T02": "Climate Change & Societal Impacts",
-    "IG-T03": "AI & Earth Data",
-    "IG-T04": "Pollution & Environmental Health",
-    "IG-T05": "Land, Coasts & Water Cycle",
-    "OS-T01": "Ocean Dynamics & Circulation",
-    "OS-T02": "Coasts & Sea Level",
-    "OS-T03": "Air–Sea & Polar Oceans",
-    "OS-T04": "Marine Biogeochemistry",
-    "PS-T01": "Planetary Environments",
-    "PS-T02": "Solid Bodies & Deep Interiors",
-    "PS-T03": "Planetary Missions & Remote Sensing",
-    "ST-T01": "Sun & Space Plasmas",
-    "ST-T02": "Magnetosphere Coupling",
-    "ST-T03": "Space Weather",
-    "SE-T01": "Earthquakes & Seismology",
-    "SE-T02": "Volcanoes & Geochemistry",
-    "SE-T03": "Plate Tectonics & Deep Earth",
-    "SE-T04": "Solid-Earth Observation",
-    "KEY-T01": "Keynotes & Special Programs"
+    "AS-T01": "極端天氣",
+    "AS-T02": "季風與氣候",
+    "AS-T03": "氣象 AI",
+    "AS-T04": "空品與化學",
+    "AS-T05": "雲與輻射",
+    "AS-T06": "觀測與遙測",
+    "AS-T07": "邊界層與都市氣候",
+    "AS-T08": "大氣動力",
+    "BG-T01": "碳循環",
+    "BG-T02": "生地化學與全球變遷",
+    "HS-T01": "水文與河川",
+    "HS-T02": "氣候變遷與水資源",
+    "HS-T03": "洪水與乾旱",
+    "HS-T04": "水文 AI",
+    "HS-T05": "生態水文與水環境",
+    "IG-T01": "多重災害與韌性",
+    "IG-T02": "氣候變遷與社會衝擊",
+    "IG-T03": "AI 與地球資料",
+    "IG-T04": "污染與環境健康",
+    "IG-T05": "地表、海岸與水循環",
+    "OS-T01": "海洋動力與環流",
+    "OS-T02": "海岸與海平面",
+    "OS-T03": "海氣作用與極區海洋",
+    "OS-T04": "海洋生地化學",
+    "PS-T01": "行星環境",
+    "PS-T02": "固態天體與深部構造",
+    "PS-T03": "行星任務與遙測",
+    "ST-T01": "太陽與太空電漿",
+    "ST-T02": "磁層耦合",
+    "ST-T03": "太空天氣",
+    "SE-T01": "地震與地震學",
+    "SE-T02": "火山與地球化學",
+    "SE-T03": "板塊構造與深部地球",
+    "SE-T04": "固體地球觀測",
+    "KEY-T01": "主題演講與特殊議程"
   };
   const BATCH_SIZE = 20;
 
@@ -155,7 +155,7 @@
   const scheduleTypeOf = (row, category) =>
     category === "KEY" ? row.program_code || row.session_type : row.session_type || row.program_code;
   const categoryName = (category) => CATEGORY_NAMES[category] || category;
-  const topicDisplayName = (topic) => topic ? TOPIC_DISPLAY_NAMES[topic] || topic : "All topics";
+  const topicDisplayName = (topic) => topic ? TOPIC_DISPLAY_NAMES[topic] || topic : "全部主題";
   const categoryClass = (category) => `category-${String(category || "").toLowerCase()}`;
   const venueGroup = (venue) => {
     const value = String(venue || "").trim().toUpperCase();
@@ -441,8 +441,8 @@
     const topics = allTopics();
     $("#topic-strip").innerHTML = ["", ...topics].map((topic) => {
       const active = state.topic === topic;
-      const fullLabel = topic ? topicDisplayName(topic) : "All topics";
-      const accessibilityLabel = topic ? `Theme: ${topicDisplayName(topic)}` : fullLabel;
+      const fullLabel = topicDisplayName(topic);
+      const accessibilityLabel = topic ? `主題：${topicDisplayName(topic)}` : fullLabel;
       const displayLabel = topic ? TOPIC_SHORT_DISPLAY_NAMES[topic] || topicDisplayName(topic) : fullLabel;
       return `<button class="topic-chip${active ? " active" : ""}" type="button" data-topic="${esc(topic)}" aria-pressed="${active}" aria-label="${esc(accessibilityLabel)}" title="${esc(fullLabel)}">${esc(displayLabel)}</button>`;
     }).join("");
